@@ -1,0 +1,6 @@
+{
+  "name": "mypoupar-proxy",
+  "version": "1.0.0",
+  "description": "HLS proxy for MyPoupar TV",
+  "main": "api/stream.js"
+}
