@@ -1,16 +1,15 @@
 {
   "version": 2,
   "functions": {
-    "api/stream.js": {
-      "memory": 256,
-      "maxDuration": 30
-    }
+    "api/stream.js":     { "memory": 512, "maxDuration": 30 },
+    "api/channels.js":   { "memory": 256, "maxDuration": 15 },
+    "api/categories.js": { "memory": 256, "maxDuration": 15 }
   },
   "headers": [
     {
       "source": "/api/(.*)",
       "headers": [
-        { "key": "Access-Control-Allow-Origin", "value": "*" },
+        { "key": "Access-Control-Allow-Origin",  "value": "*" },
         { "key": "Access-Control-Allow-Methods", "value": "GET, OPTIONS" },
         { "key": "Access-Control-Allow-Headers", "value": "*" }
       ]
