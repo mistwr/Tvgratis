@@ -611,55 +611,87 @@ function play(idx){
   const vid=document.getElementById('vid');
   vid.style.display='block';
 
+  // Clear previous
+  clearTimeout(ERR_T);clearInterval(MSG_T);
   if(HLS_I){HLS_I.destroy();HLS_I=null;}
-  vid.src='';
+  vid.src='';vid.onerror=null;vid.oncanplay=null;vid.onplaying=null;
 
-  // Show loading
+  // Show loading overlay
   showLoading(name);
 
-  // Timeout — 30s
-  clearTimeout(ERR_T);
+  // 30s timeout before showing error
   ERR_T=setTimeout(()=>{if(PLAYING===idx)showError();},30000);
 
-  function onSuccess(){clearTimeout(ERR_T);hideLoading();}
+  function onReady(){
+    clearTimeout(ERR_T);clearInterval(MSG_T);
+    hideLoading();
+  }
 
-  vid.oncanplay=vid.onplaying=onSuccess;
+  const finalUrl=proxyUrl(url);
 
   if(window.Hls&&Hls.isSupported()){
     HLS_I=new Hls({
-      enableWorker:true,lowLatencyMode:false,
-      maxBufferLength:30,maxMaxBufferLength:60,
-      manifestLoadingTimeOut:20000,manifestLoadingMaxRetry:3,manifestLoadingRetryDelay:1000,
-      levelLoadingTimeOut:20000,levelLoadingMaxRetry:3,
-      fragLoadingTimeOut:20000,fragLoadingMaxRetry:3,
+      enableWorker:true,
+      lowLatencyMode:false,
+      maxBufferLength:30,
+      maxMaxBufferLength:120,
+      manifestLoadingTimeOut:15000,
+      manifestLoadingMaxRetry:4,
+      manifestLoadingRetryDelay:500,
+      levelLoadingTimeOut:15000,
+      levelLoadingMaxRetry:4,
+      fragLoadingTimeOut:20000,
+      fragLoadingMaxRetry:6,
+      fragLoadingRetryDelay:500,
+      startLevel:-1,
+      abrEwmaDefaultEstimate:1000000,
     });
     HLS_I.loadSource(proxyUrl(url));
     HLS_I.attachMedia(vid);
-    HLS_I.on(Hls.Events.MANIFEST_PARSED,()=>{onSuccess();vid.play().catch(()=>{});});
+    HLS_I.on(Hls.Events.MANIFEST_PARSED,()=>{
+      onReady();
+      vid.play().catch(()=>{});
+    });
+    let _errCount=0;
     HLS_I.on(Hls.Events.ERROR,(_,d)=>{
-      if(d.fatal){
-        if(d.type===Hls.ErrorTypes.NETWORK_ERROR){HLS_I.startLoad();}
-        else if(d.type===Hls.ErrorTypes.MEDIA_ERROR){HLS_I.recoverMediaError();}
-        else{clearTimeout(ERR_T);showError();}
+      if(!d.fatal)return; // ignora erros menores (buffering normal)
+      _errCount++;
+      if(_errCount>5){clearTimeout(ERR_T);showError();return;}
+      if(d.type===Hls.ErrorTypes.NETWORK_ERROR){
+        // Rede caiu momentaneamente — tenta recarregar
+        setTimeout(()=>{try{HLS_I.startLoad();}catch(e){}},3000);
+      }else if(d.type===Hls.ErrorTypes.MEDIA_ERROR){
+        // Erro de media — recupera
+        try{HLS_I.recoverMediaError();}catch(e){clearTimeout(ERR_T);showError();}
+      }else{
+        clearTimeout(ERR_T);showError();
       }
     });
   }else if(vid.canPlayType('application/vnd.apple.mpegurl')){
+    // iOS Safari native HLS
     vid.src=proxyUrl(url);
+    vid.oncanplay=onReady;
+    vid.onplaying=onReady;
     vid.onerror=()=>{clearTimeout(ERR_T);showError();};
+    vid.load();
     vid.play().catch(()=>{});
   }else{
     vid.src=proxyUrl(url);
+    vid.oncanplay=onReady;
     vid.onerror=()=>{clearTimeout(ERR_T);showError();};
     vid.play().catch(()=>{});
   }
   renderGrid();
 }
 
+function onErr(idx){if(PLAYING===idx)showError();}
+
 function tryNext(){
   if(!FILT.length)return;
   const ni=(PFILT+1)%FILT.length;
   play(ALL.indexOf(FILT[ni]));
 }
+
 
 function closePl(){
   clearTimeout(ERR_T);clearInterval(MSG_T);
