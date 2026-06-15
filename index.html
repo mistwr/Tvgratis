@@ -145,85 +145,9 @@ body{height:100%;background:var(--bg);color:var(--text);font-family:'Inter',sans
 @media(min-width:701px){#chArea{padding-bottom:14px;}}
 @media(max-width:400px){.grid{grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:6px;}.logo-text{font-size:14px;}}
 @media(min-width:1100px){.grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));}}
-
-/* ── iOS / Mobile improvements ── */
-* { -webkit-touch-callout: none; }
-input, button { -webkit-appearance: none; appearance: none; }
-#vid {
-  /* iOS Safari fix */
-  -webkit-playsinline: true;
-}
-/* Safe area for notch phones */
-#topbar { padding-left: max(12px, env(safe-area-inset-left)); padding-right: max(12px, env(safe-area-inset-right)); }
-#botNav { padding-bottom: max(4px, env(safe-area-inset-bottom)); height: calc(var(--botH) + env(safe-area-inset-bottom)); }
-/* Touch feedback */
-.chCard { -webkit-tap-highlight-color: rgba(14,165,233,.2); }
-/* Scroll smooth on iOS */
-#chArea { -webkit-overflow-scrolling: touch; scroll-behavior: smooth; }
-/* Cast button in topbar */
-#castTopBtn { display:flex;align-items:center;gap:5px;background:var(--s1);border:1px solid var(--border);border-radius:8px;padding:6px 10px;cursor:pointer;color:var(--sub);font-family:Inter,sans-serif;font-size:11px;font-weight:600;transition:all .15s;flex-shrink:0;white-space:nowrap; }
-#castTopBtn:hover, #castTopBtn.on { border-color:var(--a);color:var(--a2);background:rgba(14,165,233,.1); }
-@media(max-width:700px){ #castTopBtn { display:none; } }
-
-
-  /* Google Cast button */
-  google-cast-launcher {
-    --connected-color: #38bdf8;
-    --disconnected-color: rgba(255,255,255,.85);
-    width: 22px !important;
-    height: 22px !important;
-    cursor: pointer;
-    display: inline-block;
-  }
-  #castTopBtn google-cast-launcher,
-  .plA google-cast-launcher {
-    vertical-align: middle;
-  }
 </style>
-
-  <!-- Google Cast SDK -->
-  <script src="https://www.gstatic.com/cv/js/sender/v1/cast_sender.js?loadCastFramework=1"></script>
-  <script>
-    window['__onGCastApiAvailable'] = function(isAvailable) {
-      if (isAvailable) initCast();
-    };
-  </script>
 </head>
 <body>
-
-
-<!-- ══ LOGIN ══ -->
-<div id="loginScreen" style="position:fixed;inset:0;background:#03070f;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;">
-  <div style="width:100%;max-width:360px;display:flex;flex-direction:column;align-items:center;gap:24px;">
-    <div style="display:flex;align-items:center;gap:10px;">
-      <div style="width:42px;height:42px;background:linear-gradient(135deg,#0369a1,#0ea5e9);border-radius:11px;display:flex;align-items:center;justify-content:center;box-shadow:0 0 18px rgba(14,165,233,.4);">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M2 8.5A12.5 12.5 0 0 1 14.5 21M2 4.1A16.9 16.9 0 0 1 19 21M2 13A8 8 0 0 1 10 21"/><rect x="2" y="19" width="4" height="2" rx="1"/></svg>
-      </div>
-      <div style="font-family:Syne,sans-serif;font-weight:900;font-size:22px;color:#e8f4fd;letter-spacing:-.5px;">MyPoupar<span style="color:#38bdf8;">TV</span></div>
-    </div>
-    <div style="width:100%;background:#060d1a;border:1px solid #142036;border-radius:14px;padding:24px;display:flex;flex-direction:column;gap:16px;">
-      <div style="text-align:center;">
-        <div style="font-size:14px;font-weight:700;color:#e8f4fd;margin-bottom:4px;">Acesso Privado</div>
-        <div style="font-size:12px;color:#2d4a66;">Introduz a password para continuar</div>
-      </div>
-      <div style="position:relative;">
-        <input id="loginPass" type="password" placeholder="Password" autocomplete="current-password"
-          style="width:100%;background:#091223;border:1px solid #142036;border-radius:9px;color:#e8f4fd;font-family:Inter,sans-serif;font-size:15px;padding:13px 44px 13px 14px;outline:none;transition:border-color .15s;letter-spacing:2px;"
-          onkeydown="if(event.key==='Enter')doLogin()"
-          onfocus="this.style.borderColor='#0ea5e9'"
-          onblur="this.style.borderColor='#142036'">
-        <button onclick="togglePass()" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:#2d4a66;cursor:pointer;font-size:16px;" id="eyeBtn">👁</button>
-      </div>
-      <button onclick="doLogin()" style="background:linear-gradient(135deg,#0369a1,#0ea5e9);color:#fff;border:none;border-radius:9px;padding:13px;font-family:Inter,sans-serif;font-size:14px;font-weight:700;cursor:pointer;transition:opacity .15s;letter-spacing:.3px;" onmouseover="this.style.opacity='.88'" onmouseout="this.style.opacity='1'">
-        Entrar
-      </button>
-      <div id="loginErr" style="display:none;text-align:center;font-size:12px;color:#f43f5e;background:rgba(244,63,94,.08);border:1px solid rgba(244,63,94,.2);border-radius:7px;padding:8px;">
-        Password incorreta. Tenta novamente.
-      </div>
-    </div>
-    <div style="font-size:10px;color:#2d4a66;font-family:JetBrains Mono,monospace;letter-spacing:.5px;">© 2026 MYPOUPAR TV · ACESSO PRIVADO</div>
-  </div>
-</div>
 
 <div id="topbar">
   <a class="logo" href="#">
@@ -236,9 +160,6 @@ input, button { -webkit-appearance: none; appearance: none; }
     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
     <input id="srch" type="text" placeholder="Pesquisar canal..." oninput="onSearch()" autocomplete="off" autocorrect="off" spellcheck="false">
   </div>
-  <button id="castTopBtn" onclick="toggleCast()">
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 8.5A12.5 12.5 0 0 1 14.5 21"/><path d="M2 4.1A16.9 16.9 0 0 1 19 21"/><path d="M2 13A8 8 0 0 1 10 21"/><rect x="2" y="19" width="4" height="2" rx="1"/></svg>Transmitir
-  </button>
   <div class="livepill"><div class="dot"></div>LIVE</div>
 </div>
 
@@ -260,8 +181,7 @@ input, button { -webkit-appearance: none; appearance: none; }
       <div id="povl">
         <div id="nowTxt"><div class="dot" style="color:var(--live2)"></div><span id="nowN">—</span></div>
         <div class="plA">
-          <button class="plBtn" onclick="toggleCast()" style="background:rgba(14,165,233,.4);">📺 Transmitir</button>
-          <button class="plBtn blue" onclick="doFull()">⛶</button>
+          <button class="plBtn blue" onclick="doFull()">⛶ Full</button>
           <button class="plBtn" onclick="openSite()">🌐 Site</button>
           <button class="plBtn red" onclick="closePl()">✕</button>
         </div>
@@ -280,9 +200,6 @@ input, button { -webkit-appearance: none; appearance: none; }
   </button>
   <button class="bnBtn" id="bnP" onclick="openModal()">
     <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>País
-  </button>
-  <button class="bnBtn" id="bnCast" onclick="toggleCast()">
-    <svg viewBox="0 0 24 24"><path d="M2 8.5A12.5 12.5 0 0 1 14.5 21"/><path d="M2 4.1A16.9 16.9 0 0 1 19 21"/><path d="M2 13A8 8 0 0 1 10 21"/><rect x="2" y="19" width="4" height="2" rx="1"/></svg>TV
   </button>
   <button class="bnBtn" id="bnT" onclick="doFull()">
     <svg viewBox="0 0 24 24"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>Ecrã Completo
@@ -857,16 +774,15 @@ function play(idx){
   const ch=ALL[idx];if(!ch)return;
   PLAYING=idx;PFILT=FILT.indexOf(ch);
   const name=ch.n||ch.name||'';
-  const url=ch.url||ch.site||'';
-  if(!url){toast('Stream não disponível','err');return;}
-
   document.getElementById('nowN').textContent=name;
-  updateCastPanel(name, proxyUrl(url));
 
   const bar=document.getElementById('playerBar');
   bar.classList.remove('hidden');bar.classList.add('visible');
   document.getElementById('errOvl').classList.remove('show');
   bar.ontouchend=()=>{bar.classList.add('tact');setTimeout(()=>bar.classList.remove('tact'),2500);};
+
+  const url=ch.url||ch.site||'';
+  if(!url){toast('Stream não disponível','err');return;}
 
   document.getElementById('placeH').style.display='none';
   const vid=document.getElementById('vid');
@@ -892,11 +808,7 @@ function play(idx){
     });
     HLS_I.loadSource(proxyUrl(url));
     HLS_I.attachMedia(vid);
-    HLS_I.on(Hls.Events.MANIFEST_PARSED,()=>{
-      clearTimeout(errT);
-      vid.play().catch(()=>{});
-      // Se Chromecast ativo, envia para TV automaticamente
-      if(castSession && CURRENT_STREAM_URL) castLoadMedia(CURRENT_STREAM_URL, name);});
+    HLS_I.on(Hls.Events.MANIFEST_PARSED,()=>{clearTimeout(errT);vid.play().catch(()=>{});});
     HLS_I.on(Hls.Events.ERROR,(_,d)=>{if(d.fatal){clearTimeout(errT);onErr(idx);}});
   }else if(vid.canPlayType('application/vnd.apple.mpegurl')){
     vid.src=proxyUrl(url);vid.onerror=()=>{clearTimeout(errT);onErr(idx);};vid.play().catch(()=>{});
@@ -967,268 +879,13 @@ function mTab(t){document.querySelectorAll('.bnBtn').forEach(b=>b.classList.remo
 function toast(msg,type=''){const el=document.getElementById('toast');el.textContent=msg;el.className='toast show '+type;clearTimeout(TT);TT=setTimeout(()=>el.classList.remove('show'),3000);}
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 
-
-// ════════════════════════════════════════════
-// LOGIN
-// ════════════════════════════════════════════
-const ACCESS_PASS = '2026';
-const SESSION_KEY = 'mptv_auth';
-
-function checkLogin() {
-  if (sessionStorage.getItem(SESSION_KEY) === '1') {
-    document.getElementById('loginScreen').style.display = 'none';
-  }
-}
-
-function doLogin() {
-  const pass = document.getElementById('loginPass').value;
-  if (pass === ACCESS_PASS) {
-    sessionStorage.setItem(SESSION_KEY, '1');
-    document.getElementById('loginScreen').style.display = 'none';
-    document.getElementById('loginErr').style.display = 'none';
-    // Start app
-    dLang();
-    const s = document.createElement('script');
-    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.5.7/hls.min.js';
-    s.onload = dCountry; s.onerror = dCountry;
-    document.head.appendChild(s);
-  } else {
-    document.getElementById('loginErr').style.display = 'block';
-    document.getElementById('loginPass').value = '';
-    document.getElementById('loginPass').focus();
-    // Shake animation
-    const input = document.getElementById('loginPass');
-    input.style.borderColor = '#f43f5e';
-    setTimeout(() => { input.style.borderColor = '#142036'; }, 1000);
-  }
-}
-
-function togglePass() {
-  const inp = document.getElementById('loginPass');
-  inp.type = inp.type === 'password' ? 'text' : 'password';
-}
-
-// ════════════════════════════════════════════
-// CAST
-// ════════════════════════════════════════════
-let CAST_OPEN = false;
-let CURRENT_STREAM_URL = '';
-
-function toggleCast() {
-  CAST_OPEN = !CAST_OPEN;
-  const panel = document.getElementById('castPanel');
-  const backdrop = document.getElementById('castBackdrop');
-  const btn = document.getElementById('castTopBtn');
-  panel.style.transform = CAST_OPEN ? 'translateX(0)' : 'translateX(100%)';
-  backdrop.style.display = CAST_OPEN ? 'block' : 'none';
-  if (btn) btn.classList.toggle('on', CAST_OPEN);
-}
-
-function updateCastPanel(name, url) {
-  CURRENT_STREAM_URL = url || '';
-  const nowPlaying = document.getElementById('nowPlayingCast');
-  const castName = document.getElementById('castChName');
-  const urlDisp = document.getElementById('castUrlDisplay');
-  if (name) {
-    nowPlaying.style.display = 'block';
-    castName.textContent = name;
-  }
-  if (url) {
-    urlDisp.textContent = url;
-  }
-}
-
-// ── CAST SDK OFICIAL ──
-let castSession = null;
-let castContext = null;
-
-function initCast() {
-  try {
-    castContext = cast.framework.CastContext.getInstance();
-    castContext.setOptions({
-      receiverApplicationId: chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID,
-      autoJoinPolicy: chrome.cast.AutoJoinPolicy.ORIGIN_SCOPED,
-    });
-
-    // Listener de estado
-    castContext.addEventListener(
-      cast.framework.CastContextEventType.SESSION_STATE_CHANGED,
-      (ev) => {
-        castSession = castContext.getCurrentSession();
-        const btn = document.getElementById('castTopBtn');
-        if (ev.sessionState === cast.framework.SessionState.SESSION_STARTED ||
-            ev.sessionState === cast.framework.SessionState.SESSION_RESUMED) {
-          if (btn) btn.classList.add('on');
-          toast('📺 Chromecast ligado!', 'ok');
-          // Se já há canal a tocar, envia para TV
-          if (CURRENT_STREAM_URL) castLoadMedia(CURRENT_STREAM_URL, document.getElementById('nowN').textContent);
-        } else if (ev.sessionState === cast.framework.SessionState.SESSION_ENDED) {
-          if (btn) btn.classList.remove('on');
-          toast('Chromecast desligado', '');
-        }
-      }
-    );
-
-    // Adiciona botão cast nativo ao player
-    addCastButton();
-    console.log('Cast SDK iniciado');
-  } catch(e) {
-    console.warn('Cast SDK error:', e);
-  }
-}
-
-function addCastButton() {
-  // Cria botão cast nativo do Google (google-cast-button)
-  const existing = document.getElementById('nativeCastBtn');
-  if (existing) return;
-
-  const btn = document.createElement('google-cast-launcher');
-  btn.id = 'nativeCastBtn';
-  btn.style.cssText = `
-    --connected-color: #38bdf8;
-    --disconnected-color: #fff;
-    width: 24px; height: 24px;
-    cursor: pointer;
-    flex-shrink: 0;
-  `;
-
-  // Inject into player overlay actions
-  const plA = document.querySelector('.plA');
-  if (plA) plA.prepend(btn);
-
-  // Inject into topbar next to cast button
-  const castTopBtn = document.getElementById('castTopBtn');
-  if (castTopBtn) {
-    const wrapper = document.createElement('div');
-    wrapper.style.cssText = 'display:flex;align-items:center;gap:6px;';
-    castTopBtn.parentNode.insertBefore(wrapper, castTopBtn);
-    wrapper.appendChild(castTopBtn);
-    const nativeTop = btn.cloneNode(true);
-    nativeTop.id = 'nativeCastBtnTop';
-    nativeTop.style.cssText += 'display:none;';
-    // Show on desktop
-    if (window.innerWidth > 700) nativeTop.style.display = 'block';
-    wrapper.appendChild(nativeTop);
-  }
-}
-
-function castLoadMedia(url, title) {
-  if (!castSession) {
-    toast('Liga primeiro o Chromecast', 'err');
-    return;
-  }
-  try {
-    const mediaInfo = new chrome.cast.media.MediaInfo(url, 'application/x-mpegurl');
-    mediaInfo.metadata = new chrome.cast.media.GenericMediaMetadata();
-    mediaInfo.metadata.title = title || 'MyPoupar TV';
-    mediaInfo.metadata.subtitle = 'A ver em direto';
-    mediaInfo.streamType = chrome.cast.media.StreamType.LIVE;
-
-    const request = new chrome.cast.media.LoadRequest(mediaInfo);
-    castSession.loadMedia(request)
-      .then(() => toast(`📺 "${title}" no Chromecast`, 'ok'))
-      .catch(e => toast('Erro ao enviar para TV', 'err'));
-  } catch(e) {
-    toast('Erro Chromecast: ' + e.message, 'err');
-  }
-}
-
-function tryChromecast() {
-  if (castContext) {
-    // Abre o seletor de dispositivos Cast
-    castContext.requestSession()
-      .then(() => {
-        if (CURRENT_STREAM_URL) {
-          castLoadMedia(CURRENT_STREAM_URL, document.getElementById('nowN').textContent);
-        }
-      })
-      .catch(e => {
-        if (e.code !== 'cancel') toast('Sem dispositivos Cast encontrados', 'err');
-      });
-  } else {
-    // Fallback — Chrome nativo
-    toast('Chrome → Menu ⋮ → Transmitir…', '');
-  }
-}
-
-function tryAirPlay() {
-  const vid = document.getElementById('vid');
-  if (vid && vid.webkitShowPlaybackTargetPicker) {
-    vid.webkitShowPlaybackTargetPicker();
-  } else {
-    toast('AirPlay disponível em Safari no iPhone/Mac', '');
-  }
-}
-
-function openVLC() {
-  if (!CURRENT_STREAM_URL) { toast('Abre um canal primeiro', 'err'); return; }
-  window.location.href = 'vlc://' + CURRENT_STREAM_URL;
-  setTimeout(() => toast('Se VLC não abriu, copia o URL abaixo', ''), 1500);
-}
-
-function copyStreamUrl() {
-  if (!CURRENT_STREAM_URL) { toast('Abre um canal primeiro', 'err'); return; }
-  navigator.clipboard.writeText(CURRENT_STREAM_URL)
-    .then(() => toast('URL copiado ✓', 'ok'))
-    .catch(() => {
-      const ta = document.createElement('textarea');
-      ta.value = CURRENT_STREAM_URL;
-      document.body.appendChild(ta);
-      ta.select();
-      try { document.execCommand('copy'); } catch(e) {}
-      ta.remove();
-      toast('URL copiado ✓', 'ok');
-    });
-}
-
-// ════════════════════════════════════════════
-// INIT
-// ════════════════════════════════════════════
 (function(){
-  checkLogin();
-  // HLS loaded after login
-  if(sessionStorage.getItem(SESSION_KEY)==='1'){
+  dLang();
   const s=document.createElement('script');
   s.src='https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.5.7/hls.min.js';
   s.onload=dCountry;s.onerror=dCountry;
   document.head.appendChild(s);
-  }// end auth check
 })();
 </script>
-
-<!-- ══ CAST PANEL ══ -->
-<div id="castPanel" style="position:fixed;top:0;right:0;bottom:0;width:min(300px,100vw);background:#060d1a;border-left:1px solid #142036;z-index:350;transform:translateX(100%);transition:transform .28s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;overflow:hidden;">
-  <div style="padding:16px;border-bottom:1px solid #142036;display:flex;align-items:center;justify-content:space-between;">
-    <div style="font-size:14px;font-weight:700;color:#e8f4fd;display:flex;align-items:center;gap:8px;">📺 Enviar para TV</div>
-    <button onclick="toggleCast()" style="background:none;border:none;color:#2d4a66;font-size:18px;cursor:pointer;width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:6px;">✕</button>
-  </div>
-  <div id="nowPlayingCast" style="display:none;margin:12px;background:#0b1628;border:1px solid #1a2e4a;border-radius:9px;padding:12px;">
-    <div style="font-size:10px;color:#2d4a66;margin-bottom:4px;">A REPRODUZIR</div>
-    <div id="castChName" style="font-size:13px;font-weight:700;color:#e8f4fd;"></div>
-  </div>
-  <div style="flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px;">
-    <div style="font-family:JetBrains Mono,monospace;font-size:8px;letter-spacing:1.5px;text-transform:uppercase;color:#2d4a66;margin-bottom:4px;">Nativo no browser</div>
-    <div onclick="tryChromecast()" style="background:#091223;border:1px solid #142036;border-radius:9px;padding:12px;cursor:pointer;transition:border-color .12s;" onmouseover="this.style.borderColor='#38bdf8'" onmouseout="this.style.borderColor='#142036'">
-      <div style="font-size:12px;font-weight:700;color:#e8f4fd;margin-bottom:3px;">🎯 Google Chromecast</div>
-      <div style="font-size:10px;color:#7ea8c9;line-height:1.6;">Chrome → Menu → Transmitir…<br>ou ícone cast que aparece no player.</div>
-    </div>
-    <div onclick="tryAirPlay()" style="background:#091223;border:1px solid #142036;border-radius:9px;padding:12px;cursor:pointer;transition:border-color .12s;" onmouseover="this.style.borderColor='#38bdf8'" onmouseout="this.style.borderColor='#142036'">
-      <div style="font-size:12px;font-weight:700;color:#e8f4fd;margin-bottom:3px;">🍎 AirPlay (Apple TV / Smart TV)</div>
-      <div style="font-size:10px;color:#7ea8c9;line-height:1.6;">Safari iPhone/Mac → ícone AirPlay no player de vídeo.</div>
-    </div>
-    <div style="font-family:JetBrains Mono,monospace;font-size:8px;letter-spacing:1.5px;text-transform:uppercase;color:#2d4a66;margin:4px 0;">Apps externas</div>
-    <div onclick="openVLC()" style="background:#091223;border:1px solid #142036;border-radius:9px;padding:12px;cursor:pointer;transition:border-color .12s;" onmouseover="this.style.borderColor='#38bdf8'" onmouseout="this.style.borderColor='#142036'">
-      <div style="font-size:12px;font-weight:700;color:#e8f4fd;margin-bottom:3px;">🎬 VLC Media Player</div>
-      <div style="font-size:10px;color:#7ea8c9;line-height:1.6;">Abre o stream no VLC. Usa "Reproduzir em" para Chromecast.</div>
-    </div>
-    <div onclick="copyStreamUrl()" style="background:#091223;border:1px solid #142036;border-radius:9px;padding:12px;cursor:pointer;transition:border-color .12s;" onmouseover="this.style.borderColor='#38bdf8'" onmouseout="this.style.borderColor='#142036'">
-      <div style="font-size:12px;font-weight:700;color:#e8f4fd;margin-bottom:3px;">🔗 Copiar URL do stream</div>
-      <div style="font-size:10px;color:#7ea8c9;line-height:1.6;">Cola em IPTV Smarters, TiviMate, Kodi ou Smart TV.</div>
-      <div id="castUrlDisplay" style="font-family:JetBrains Mono,monospace;font-size:9px;color:#38bdf8;background:rgba(14,165,233,.08);padding:5px 7px;border-radius:5px;margin-top:6px;word-break:break-all;">Seleciona um canal primeiro</div>
-    </div>
-  </div>
-</div>
-<div id="castBackdrop" onclick="toggleCast()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:340;backdrop-filter:blur(4px);"></div>
-
 </body>
 </html>
