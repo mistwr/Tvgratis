@@ -595,6 +595,16 @@ function showError(){
 // ── PLAYER ──
 function play(idx){
   const ch=ALL[idx];if(!ch)return;
+
+  // Destroy previous HLS FIRST before anything else
+  clearTimeout(ERR_T);clearInterval(MSG_T);
+  if(HLS_I){try{HLS_I.destroy();}catch(e){}HLS_I=null;}
+  const vid=document.getElementById('vid');
+  try{vid.pause();}catch(e){}
+  vid.removeAttribute('src');
+  vid.load();
+  vid.onerror=null;vid.oncanplay=null;vid.onplaying=null;
+
   PLAYING=idx;PFILT=FILT.indexOf(ch);
   const name=ch.n||ch.name||'';
   const url=ch.url||ch.site||'';
@@ -608,21 +618,20 @@ function play(idx){
   bar.ontouchend=()=>{bar.classList.add('tact');setTimeout(()=>bar.classList.remove('tact'),2500);};
 
   document.getElementById('placeH').style.display='none';
-  const vid=document.getElementById('vid');
   vid.style.display='block';
-
-  // Clear previous
-  clearTimeout(ERR_T);clearInterval(MSG_T);
-  if(HLS_I){HLS_I.destroy();HLS_I=null;}
-  vid.src='';vid.onerror=null;vid.oncanplay=null;vid.onplaying=null;
 
   // Show loading overlay
   showLoading(name);
 
-  // 30s timeout before showing error
-  ERR_T=setTimeout(()=>{if(PLAYING===idx)showError();},30000);
+  // Capture this play session
+  const thisIdx=idx;
+  const isStale=()=>PLAYING!==thisIdx;
+
+  // 30s timeout
+  ERR_T=setTimeout(()=>{if(!isStale())showError();},30000);
 
   function onReady(){
+    if(isStale())return; // canal já mudou, ignora
     clearTimeout(ERR_T);clearInterval(MSG_T);
     hideLoading();
   }
@@ -644,41 +653,39 @@ function play(idx){
       fragLoadingMaxRetry:6,
       fragLoadingRetryDelay:500,
       startLevel:-1,
-      abrEwmaDefaultEstimate:1000000,
     });
-    HLS_I.loadSource(proxyUrl(url));
+    HLS_I.loadSource(finalUrl);
     HLS_I.attachMedia(vid);
     HLS_I.on(Hls.Events.MANIFEST_PARSED,()=>{
+      if(isStale())return;
       onReady();
       vid.play().catch(()=>{});
     });
     let _errCount=0;
     HLS_I.on(Hls.Events.ERROR,(_,d)=>{
-      if(!d.fatal)return; // ignora erros menores (buffering normal)
+      if(isStale())return;
+      if(!d.fatal)return;
       _errCount++;
-      if(_errCount>5){clearTimeout(ERR_T);showError();return;}
+      if(_errCount>5){if(!isStale()){clearTimeout(ERR_T);showError();}return;}
       if(d.type===Hls.ErrorTypes.NETWORK_ERROR){
-        // Rede caiu momentaneamente — tenta recarregar
-        setTimeout(()=>{try{HLS_I.startLoad();}catch(e){}},3000);
+        setTimeout(()=>{if(!isStale()&&HLS_I)try{HLS_I.startLoad();}catch(e){}},3000);
       }else if(d.type===Hls.ErrorTypes.MEDIA_ERROR){
-        // Erro de media — recupera
-        try{HLS_I.recoverMediaError();}catch(e){clearTimeout(ERR_T);showError();}
+        if(HLS_I)try{HLS_I.recoverMediaError();}catch(e){if(!isStale()){clearTimeout(ERR_T);showError();}}
       }else{
-        clearTimeout(ERR_T);showError();
+        if(!isStale()){clearTimeout(ERR_T);showError();}
       }
     });
   }else if(vid.canPlayType('application/vnd.apple.mpegurl')){
-    // iOS Safari native HLS
-    vid.src=proxyUrl(url);
+    vid.src=finalUrl;
     vid.oncanplay=onReady;
     vid.onplaying=onReady;
-    vid.onerror=()=>{clearTimeout(ERR_T);showError();};
+    vid.onerror=()=>{if(!isStale()){clearTimeout(ERR_T);showError();}};
     vid.load();
     vid.play().catch(()=>{});
   }else{
-    vid.src=proxyUrl(url);
+    vid.src=finalUrl;
     vid.oncanplay=onReady;
-    vid.onerror=()=>{clearTimeout(ERR_T);showError();};
+    vid.onerror=()=>{if(!isStale()){clearTimeout(ERR_T);showError();}};
     vid.play().catch(()=>{});
   }
   renderGrid();
