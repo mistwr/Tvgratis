@@ -572,12 +572,12 @@ function showLoading(name){
   ovl.classList.add('show');
   // Progressive messages
   clearInterval(MSG_T);
-  const msgs=['A carregar stream…','A aguardar resposta…','Quase pronto…','Ainda a tentar…'];
+  const msgs=['A carregar stream…','A aguardar resposta…','Quase pronto…'];
   let i=0;
   MSG_T=setInterval(()=>{
     if(i<msgs.length){document.getElementById('loadMsg').textContent=msgs[i++];}
     else clearInterval(MSG_T);
-  },12000);
+  },6000);
 }
 
 function hideLoading(){
@@ -595,16 +595,6 @@ function showError(){
 // ── PLAYER ──
 function play(idx){
   const ch=ALL[idx];if(!ch)return;
-
-  // Destroy previous HLS FIRST before anything else
-  clearTimeout(ERR_T);clearInterval(MSG_T);
-  if(HLS_I){try{HLS_I.destroy();}catch(e){}HLS_I=null;}
-  const vid=document.getElementById('vid');
-  try{vid.pause();}catch(e){}
-  vid.removeAttribute('src');
-  vid.load();
-  vid.onerror=null;vid.oncanplay=null;vid.onplaying=null;
-
   PLAYING=idx;PFILT=FILT.indexOf(ch);
   const name=ch.n||ch.name||'';
   const url=ch.url||ch.site||'';
@@ -618,20 +608,21 @@ function play(idx){
   bar.ontouchend=()=>{bar.classList.add('tact');setTimeout(()=>bar.classList.remove('tact'),2500);};
 
   document.getElementById('placeH').style.display='none';
+  const vid=document.getElementById('vid');
   vid.style.display='block';
+
+  // Clear previous
+  clearTimeout(ERR_T);clearInterval(MSG_T);
+  if(HLS_I){HLS_I.destroy();HLS_I=null;}
+  vid.src='';vid.onerror=null;vid.oncanplay=null;vid.onplaying=null;
 
   // Show loading overlay
   showLoading(name);
 
-  // Capture this play session
-  const thisIdx=idx;
-  const isStale=()=>PLAYING!==thisIdx;
-
-  // 30s timeout
-  ERR_T=setTimeout(()=>{if(!isStale())showError();},60000);
+  // 30s timeout before showing error
+  ERR_T=setTimeout(()=>{if(PLAYING===idx)showError();},30000);
 
   function onReady(){
-    if(isStale())return; // canal já mudou, ignora
     clearTimeout(ERR_T);clearInterval(MSG_T);
     hideLoading();
   }
@@ -642,50 +633,47 @@ function play(idx){
     HLS_I=new Hls({
       enableWorker:true,
       lowLatencyMode:false,
-      maxBufferLength:30,
-      maxMaxBufferLength:120,
+      maxBufferLength:20,
       manifestLoadingTimeOut:15000,
-      manifestLoadingMaxRetry:4,
-      manifestLoadingRetryDelay:500,
+      manifestLoadingMaxRetry:2,
       levelLoadingTimeOut:15000,
-      levelLoadingMaxRetry:4,
-      fragLoadingTimeOut:20000,
-      fragLoadingMaxRetry:6,
-      fragLoadingRetryDelay:500,
+      fragLoadingTimeOut:15000,
+      fragLoadingMaxRetry:2,
       startLevel:-1,
     });
     HLS_I.loadSource(finalUrl);
     HLS_I.attachMedia(vid);
     HLS_I.on(Hls.Events.MANIFEST_PARSED,()=>{
-      if(isStale())return;
       onReady();
       vid.play().catch(()=>{});
     });
-    let _errCount=0;
     HLS_I.on(Hls.Events.ERROR,(_,d)=>{
-      if(isStale())return;
-      if(!d.fatal)return;
-      _errCount++;
-      if(_errCount>5){if(!isStale()){clearTimeout(ERR_T);showError();}return;}
-      if(d.type===Hls.ErrorTypes.NETWORK_ERROR){
-        setTimeout(()=>{if(!isStale()&&HLS_I)try{HLS_I.startLoad();}catch(e){}},3000);
-      }else if(d.type===Hls.ErrorTypes.MEDIA_ERROR){
-        if(HLS_I)try{HLS_I.recoverMediaError();}catch(e){if(!isStale()){clearTimeout(ERR_T);showError();}}
+      if(!d.fatal)return; // ignore non-fatal
+      // Fatal error — try to recover once
+      if(d.type===Hls.ErrorTypes.NETWORK_ERROR&&!ch._netRetried){
+        ch._netRetried=true;
+        setTimeout(()=>HLS_I.startLoad(),2000);
+      }else if(d.type===Hls.ErrorTypes.MEDIA_ERROR&&!ch._mediaRetried){
+        ch._mediaRetried=true;
+        HLS_I.recoverMediaError();
       }else{
-        if(!isStale()){clearTimeout(ERR_T);showError();}
+        // Give up — show error
+        clearTimeout(ERR_T);
+        showError();
       }
     });
   }else if(vid.canPlayType('application/vnd.apple.mpegurl')){
+    // iOS Safari native HLS
     vid.src=finalUrl;
     vid.oncanplay=onReady;
     vid.onplaying=onReady;
-    vid.onerror=()=>{if(!isStale()){clearTimeout(ERR_T);showError();}};
+    vid.onerror=()=>{clearTimeout(ERR_T);showError();};
     vid.load();
     vid.play().catch(()=>{});
   }else{
     vid.src=finalUrl;
     vid.oncanplay=onReady;
-    vid.onerror=()=>{if(!isStale()){clearTimeout(ERR_T);showError();}};
+    vid.onerror=()=>{clearTimeout(ERR_T);showError();};
     vid.play().catch(()=>{});
   }
   renderGrid();
