@@ -611,82 +611,55 @@ function play(idx){
   const vid=document.getElementById('vid');
   vid.style.display='block';
 
-  // Clear previous
-  clearTimeout(ERR_T);clearInterval(MSG_T);
   if(HLS_I){HLS_I.destroy();HLS_I=null;}
-  vid.src='';vid.onerror=null;vid.oncanplay=null;vid.onplaying=null;
+  vid.src='';
 
-  // Show loading overlay
+  // Show loading
   showLoading(name);
 
-  // 30s timeout before showing error
+  // Timeout — 30s
+  clearTimeout(ERR_T);
   ERR_T=setTimeout(()=>{if(PLAYING===idx)showError();},30000);
 
-  function onReady(){
-    clearTimeout(ERR_T);clearInterval(MSG_T);
-    hideLoading();
-  }
+  function onSuccess(){clearTimeout(ERR_T);hideLoading();}
 
-  const finalUrl=proxyUrl(url);
+  vid.oncanplay=vid.onplaying=onSuccess;
 
   if(window.Hls&&Hls.isSupported()){
     HLS_I=new Hls({
-      enableWorker:true,
-      lowLatencyMode:false,
-      maxBufferLength:20,
-      manifestLoadingTimeOut:15000,
-      manifestLoadingMaxRetry:2,
-      levelLoadingTimeOut:15000,
-      fragLoadingTimeOut:15000,
-      fragLoadingMaxRetry:2,
-      startLevel:-1,
+      enableWorker:true,lowLatencyMode:false,
+      maxBufferLength:30,maxMaxBufferLength:60,
+      manifestLoadingTimeOut:20000,manifestLoadingMaxRetry:3,manifestLoadingRetryDelay:1000,
+      levelLoadingTimeOut:20000,levelLoadingMaxRetry:3,
+      fragLoadingTimeOut:20000,fragLoadingMaxRetry:3,
     });
-    HLS_I.loadSource(finalUrl);
+    HLS_I.loadSource(proxyUrl(url));
     HLS_I.attachMedia(vid);
-    HLS_I.on(Hls.Events.MANIFEST_PARSED,()=>{
-      onReady();
-      vid.play().catch(()=>{});
-    });
+    HLS_I.on(Hls.Events.MANIFEST_PARSED,()=>{onSuccess();vid.play().catch(()=>{});});
     HLS_I.on(Hls.Events.ERROR,(_,d)=>{
-      if(!d.fatal)return; // ignore non-fatal
-      // Fatal error — try to recover once
-      if(d.type===Hls.ErrorTypes.NETWORK_ERROR&&!ch._netRetried){
-        ch._netRetried=true;
-        setTimeout(()=>HLS_I.startLoad(),2000);
-      }else if(d.type===Hls.ErrorTypes.MEDIA_ERROR&&!ch._mediaRetried){
-        ch._mediaRetried=true;
-        HLS_I.recoverMediaError();
-      }else{
-        // Give up — show error
-        clearTimeout(ERR_T);
-        showError();
+      if(d.fatal){
+        if(d.type===Hls.ErrorTypes.NETWORK_ERROR){HLS_I.startLoad();}
+        else if(d.type===Hls.ErrorTypes.MEDIA_ERROR){HLS_I.recoverMediaError();}
+        else{clearTimeout(ERR_T);showError();}
       }
     });
   }else if(vid.canPlayType('application/vnd.apple.mpegurl')){
-    // iOS Safari native HLS
-    vid.src=finalUrl;
-    vid.oncanplay=onReady;
-    vid.onplaying=onReady;
+    vid.src=proxyUrl(url);
     vid.onerror=()=>{clearTimeout(ERR_T);showError();};
-    vid.load();
     vid.play().catch(()=>{});
   }else{
-    vid.src=finalUrl;
-    vid.oncanplay=onReady;
+    vid.src=proxyUrl(url);
     vid.onerror=()=>{clearTimeout(ERR_T);showError();};
     vid.play().catch(()=>{});
   }
   renderGrid();
 }
 
-function onErr(idx){if(PLAYING===idx)showError();}
-
 function tryNext(){
   if(!FILT.length)return;
   const ni=(PFILT+1)%FILT.length;
   play(ALL.indexOf(FILT[ni]));
 }
-
 
 function closePl(){
   clearTimeout(ERR_T);clearInterval(MSG_T);
