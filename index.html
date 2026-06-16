@@ -163,7 +163,19 @@ body{height:100%;background:var(--bg);color:var(--text);font-family:'Inter',sans
 #castTopBtn{display:flex;align-items:center;gap:5px;background:var(--s1);border:1px solid var(--border);border-radius:8px;padding:6px 10px;cursor:pointer;color:var(--sub);font-family:Inter,sans-serif;font-size:11px;font-weight:600;transition:all .15s;flex-shrink:0;white-space:nowrap;}
 #castTopBtn:hover,#castTopBtn.on{border-color:var(--a);color:var(--a2);background:rgba(14,165,233,.1);}
 @media(max-width:700px){#castTopBtn{display:none;}}
+
+google-cast-launcher{
+  --connected-color:#38bdf8;--disconnected-color:rgba(255,255,255,.85);
+  width:22px!important;height:22px!important;cursor:pointer;display:inline-block;vertical-align:middle;
+}
+#castTopBtn{display:flex;align-items:center;gap:6px;}
 </style>
+<script src="https://www.gstatic.com/cv/js/sender/v1/cast_sender.js?loadCastFramework=1"></script>
+<script>
+  window['__onGCastApiAvailable'] = function(isAvailable) {
+    if (isAvailable) { window._castReady = true; if (window.initCastSDK) initCastSDK(); }
+  };
+</script>
 </head>
 <body>
 
@@ -572,12 +584,12 @@ function showLoading(name){
   ovl.classList.add('show');
   // Progressive messages
   clearInterval(MSG_T);
-  const msgs=['A carregar stream…','A aguardar resposta…','Quase pronto…'];
+  const msgs=['A carregar stream…','A aguardar resposta…','Quase pronto…','Ainda a tentar…'];
   let i=0;
   MSG_T=setInterval(()=>{
     if(i<msgs.length){document.getElementById('loadMsg').textContent=msgs[i++];}
     else clearInterval(MSG_T);
-  },6000);
+  },12000);
 }
 
 function hideLoading(){
@@ -595,6 +607,16 @@ function showError(){
 // ── PLAYER ──
 function play(idx){
   const ch=ALL[idx];if(!ch)return;
+
+  // Destroy previous HLS FIRST before anything else
+  clearTimeout(ERR_T);clearInterval(MSG_T);
+  if(HLS_I){try{HLS_I.destroy();}catch(e){}HLS_I=null;}
+  const vid=document.getElementById('vid');
+  try{vid.pause();}catch(e){}
+  vid.removeAttribute('src');
+  vid.load();
+  vid.onerror=null;vid.oncanplay=null;vid.onplaying=null;
+
   PLAYING=idx;PFILT=FILT.indexOf(ch);
   const name=ch.n||ch.name||'';
   const url=ch.url||ch.site||'';
@@ -608,21 +630,20 @@ function play(idx){
   bar.ontouchend=()=>{bar.classList.add('tact');setTimeout(()=>bar.classList.remove('tact'),2500);};
 
   document.getElementById('placeH').style.display='none';
-  const vid=document.getElementById('vid');
   vid.style.display='block';
-
-  // Clear previous
-  clearTimeout(ERR_T);clearInterval(MSG_T);
-  if(HLS_I){HLS_I.destroy();HLS_I=null;}
-  vid.src='';vid.onerror=null;vid.oncanplay=null;vid.onplaying=null;
 
   // Show loading overlay
   showLoading(name);
 
-  // 30s timeout before showing error
-  ERR_T=setTimeout(()=>{if(PLAYING===idx)showError();},30000);
+  // Capture this play session
+  const thisIdx=idx;
+  const isStale=()=>PLAYING!==thisIdx;
+
+  // 30s timeout
+  ERR_T=setTimeout(()=>{if(!isStale())showError();},60000);
 
   function onReady(){
+    if(isStale())return; // canal já mudou, ignora
     clearTimeout(ERR_T);clearInterval(MSG_T);
     hideLoading();
   }
@@ -633,47 +654,51 @@ function play(idx){
     HLS_I=new Hls({
       enableWorker:true,
       lowLatencyMode:false,
-      maxBufferLength:20,
+      maxBufferLength:30,
+      maxMaxBufferLength:120,
       manifestLoadingTimeOut:15000,
-      manifestLoadingMaxRetry:2,
+      manifestLoadingMaxRetry:4,
+      manifestLoadingRetryDelay:500,
       levelLoadingTimeOut:15000,
-      fragLoadingTimeOut:15000,
-      fragLoadingMaxRetry:2,
+      levelLoadingMaxRetry:4,
+      fragLoadingTimeOut:20000,
+      fragLoadingMaxRetry:6,
+      fragLoadingRetryDelay:500,
       startLevel:-1,
     });
     HLS_I.loadSource(finalUrl);
     HLS_I.attachMedia(vid);
     HLS_I.on(Hls.Events.MANIFEST_PARSED,()=>{
+      if(isStale())return;
       onReady();
       vid.play().catch(()=>{});
+      if(castSession)castSendToTV(finalUrl,name);
     });
+    let _errCount=0;
     HLS_I.on(Hls.Events.ERROR,(_,d)=>{
-      if(!d.fatal)return; // ignore non-fatal
-      // Fatal error — try to recover once
-      if(d.type===Hls.ErrorTypes.NETWORK_ERROR&&!ch._netRetried){
-        ch._netRetried=true;
-        setTimeout(()=>HLS_I.startLoad(),2000);
-      }else if(d.type===Hls.ErrorTypes.MEDIA_ERROR&&!ch._mediaRetried){
-        ch._mediaRetried=true;
-        HLS_I.recoverMediaError();
+      if(isStale())return;
+      if(!d.fatal)return;
+      _errCount++;
+      if(_errCount>5){if(!isStale()){clearTimeout(ERR_T);showError();}return;}
+      if(d.type===Hls.ErrorTypes.NETWORK_ERROR){
+        setTimeout(()=>{if(!isStale()&&HLS_I)try{HLS_I.startLoad();}catch(e){}},3000);
+      }else if(d.type===Hls.ErrorTypes.MEDIA_ERROR){
+        if(HLS_I)try{HLS_I.recoverMediaError();}catch(e){if(!isStale()){clearTimeout(ERR_T);showError();}}
       }else{
-        // Give up — show error
-        clearTimeout(ERR_T);
-        showError();
+        if(!isStale()){clearTimeout(ERR_T);showError();}
       }
     });
   }else if(vid.canPlayType('application/vnd.apple.mpegurl')){
-    // iOS Safari native HLS
     vid.src=finalUrl;
     vid.oncanplay=onReady;
     vid.onplaying=onReady;
-    vid.onerror=()=>{clearTimeout(ERR_T);showError();};
+    vid.onerror=()=>{if(!isStale()){clearTimeout(ERR_T);showError();}};
     vid.load();
     vid.play().catch(()=>{});
   }else{
     vid.src=finalUrl;
     vid.oncanplay=onReady;
-    vid.onerror=()=>{clearTimeout(ERR_T);showError();};
+    vid.onerror=()=>{if(!isStale()){clearTimeout(ERR_T);showError();}};
     vid.play().catch(()=>{});
   }
   renderGrid();
@@ -730,10 +755,79 @@ function updateCastPanel(name,url){
   if(name){document.getElementById('nowPlayingCast').style.display='block';document.getElementById('castChName').textContent=name;}
   if(url)document.getElementById('castUrlDisplay').textContent=url;
 }
+// ── GOOGLE CAST SDK REAL ──
+let castContext=null,castSession=null;
+
+function initCastSDK(){
+  try{
+    castContext=cast.framework.CastContext.getInstance();
+    castContext.setOptions({
+      receiverApplicationId: chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID,
+      autoJoinPolicy: chrome.cast.AutoJoinPolicy.ORIGIN_SCOPED,
+    });
+    castContext.addEventListener(
+      cast.framework.CastContextEventType.SESSION_STATE_CHANGED,
+      (ev)=>{
+        castSession=castContext.getCurrentSession();
+        const btn=document.getElementById('castTopBtn');
+        if(ev.sessionState===cast.framework.SessionState.SESSION_STARTED||
+           ev.sessionState===cast.framework.SessionState.SESSION_RESUMED){
+          if(btn)btn.classList.add('on');
+          toast('📺 Chromecast ligado','ok');
+          if(CURRENT_STREAM_URL)castSendToTV(CURRENT_STREAM_URL,document.getElementById('nowN').textContent);
+        }else if(ev.sessionState===cast.framework.SessionState.SESSION_ENDED){
+          if(btn)btn.classList.remove('on');
+          toast('Chromecast desligado','');
+        }
+      }
+    );
+    injectNativeCastButtons();
+  }catch(e){console.warn('Cast init error:',e);}
+}
+
+function injectNativeCastButtons(){
+  if(document.getElementById('nativeCastTop'))return;
+  // Botão nativo na topbar
+  const topBtn=document.getElementById('castTopBtn');
+  if(topBtn){
+    const el=document.createElement('google-cast-launcher');
+    el.id='nativeCastTop';
+    topBtn.appendChild(el);
+  }
+  // Botão nativo no player overlay
+  const plA=document.querySelector('.plA');
+  if(plA&&!document.getElementById('nativeCastPlayer')){
+    const el2=document.createElement('google-cast-launcher');
+    el2.id='nativeCastPlayer';
+    el2.style.cssText='width:20px;height:20px;';
+    plA.prepend(el2);
+  }
+}
+
+function castSendToTV(url,title){
+  if(!castSession){toast('Liga primeiro o Chromecast','err');return;}
+  try{
+    const mediaInfo=new chrome.cast.media.MediaInfo(url,'application/x-mpegurl');
+    mediaInfo.metadata=new chrome.cast.media.GenericMediaMetadata();
+    mediaInfo.metadata.title=title||'MyPoupar TV';
+    mediaInfo.streamType=chrome.cast.media.StreamType.LIVE;
+    const request=new chrome.cast.media.LoadRequest(mediaInfo);
+    castSession.loadMedia(request)
+      .then(()=>toast('📺 "'+title+'" no Chromecast','ok'))
+      .catch(()=>toast('Erro ao enviar para TV','err'));
+  }catch(e){toast('Erro Chromecast: '+e.message,'err');}
+}
+
 function tryChromecast(){
-  const vid=document.getElementById('vid');
-  if(vid&&vid.remote&&vid.remote.prompt)vid.remote.prompt().catch(()=>{});
-  else toast('Chrome → Menu ⋮ → Transmitir…','');
+  if(castContext){
+    castContext.requestSession()
+      .then(()=>{
+        if(CURRENT_STREAM_URL)castSendToTV(CURRENT_STREAM_URL,document.getElementById('nowN').textContent);
+      })
+      .catch(e=>{ if(e!=='cancel')toast('Sem dispositivos Cast encontrados','err'); });
+  }else{
+    toast('A carregar Cast… tenta novamente em 2s','');
+  }
 }
 function tryAirPlay(){const vid=document.getElementById('vid');if(vid&&vid.webkitShowPlaybackTargetPicker)vid.webkitShowPlaybackTargetPicker();else toast('AirPlay em Safari iPhone/Mac','');}
 function openVLC(){if(!CURRENT_STREAM_URL){toast('Abre um canal primeiro','err');return;}window.location.href='vlc://'+CURRENT_STREAM_URL;}
@@ -765,6 +859,7 @@ function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').
     startApp();
   }
   // else login screen visible
+  if(window._castReady)initCastSDK();
 })();
 </script>
 </body>
