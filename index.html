@@ -173,7 +173,10 @@ google-cast-launcher{
 <script src="https://www.gstatic.com/cv/js/sender/v1/cast_sender.js?loadCastFramework=1"></script>
 <script>
   window['__onGCastApiAvailable'] = function(isAvailable) {
-    if (isAvailable) { window._castReady = true; if (window.initCastSDK) initCastSDK(); }
+    window._castReady = !!isAvailable;
+    window._castPoll = setInterval(function(){
+      if (window.initCastSDK) { clearInterval(window._castPoll); if (window._castReady) initCastSDK(); }
+    }, 200);
   };
 </script>
 </head>
@@ -759,6 +762,8 @@ function updateCastPanel(name,url){
 let castContext=null,castSession=null;
 
 function initCastSDK(){
+  if(window._castInited)return;
+  window._castInited=true;
   try{
     castContext=cast.framework.CastContext.getInstance();
     castContext.setOptions({
