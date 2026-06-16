@@ -315,7 +315,7 @@ google-cast-launcher{
   </div>
   <div style="flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px;">
     <div style="font-family:JetBrains Mono,monospace;font-size:8px;letter-spacing:1.5px;text-transform:uppercase;color:#2d4a66;">Nativo no browser</div>
-    <div onclick="tryChromecast()" style="background:#091223;border:1px solid #142036;border-radius:9px;padding:12px;cursor:pointer;" onmouseover="this.style.borderColor='#38bdf8'" onmouseout="this.style.borderColor='#142036'">
+    <div onclick="tryChromecast()" id="castOptDiv" style="background:#091223;border:1px solid #142036;border-radius:9px;padding:12px;cursor:pointer;" onmouseover="this.style.borderColor='#38bdf8'" onmouseout="this.style.borderColor='#142036'">
       <div style="font-size:12px;font-weight:700;color:#e8f4fd;margin-bottom:3px;">🎯 Google Chromecast</div>
       <div style="font-size:10px;color:#7ea8c9;line-height:1.6;">Chrome → Menu → Transmitir… ou ícone cast no player.</div>
     </div>
@@ -791,10 +791,9 @@ function initCastSDK(){
 }
 
 function injectNativeCastButtons(){
-  if(document.getElementById('nativeCastTop'))return;
-  // Botão nativo na topbar
+  // Botão nativo na topbar (visível só em desktop, #castTopBtn fica display:none em mobile)
   const topBtn=document.getElementById('castTopBtn');
-  if(topBtn){
+  if(topBtn&&!document.getElementById('nativeCastTop')){
     const el=document.createElement('google-cast-launcher');
     el.id='nativeCastTop';
     topBtn.appendChild(el);
@@ -806,6 +805,18 @@ function injectNativeCastButtons(){
     el2.id='nativeCastPlayer';
     el2.style.cssText='width:20px;height:20px;';
     plA.prepend(el2);
+  }
+  // Botão nativo dentro do painel "Enviar para TV" (sempre visível, mobile e desktop)
+  const castOpt=document.getElementById('castOptDiv');
+  if(castOpt&&!document.getElementById('nativeCastPanel')){
+    const el3=document.createElement('google-cast-launcher');
+    el3.id='nativeCastPanel';
+    el3.style.cssText='width:24px;height:24px;flex-shrink:0;';
+    el3.addEventListener('click',e=>e.stopPropagation());
+    castOpt.style.display='flex';
+    castOpt.style.alignItems='center';
+    castOpt.style.gap='12px';
+    castOpt.appendChild(el3);
   }
 }
 
